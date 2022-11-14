@@ -1,28 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-feed
+  name: backend-user
 spec:
+  replicas: 2
   selector:
     matchLabels:
-      run: backend-feed
-  replicas: 2
+      run: backend-user
   template:
     metadata:
       labels:
-        run: backend-feed
+        run: backend-user
     spec:
       containers:
-      - name: backend-feed
-        image: duongvt7/udagram-api-feed:v1
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
+      - name: backend-user
+        image: duongvt7/udagram-api-user:v1
         resources:
-          limits:
-            cpu: 500m
           requests:
-            cpu: 200m
+            cpu: 500m
+          limits:
+            cpu: 1000m
         env:
           - name: POSTGRES_HOST
             valueFrom:
@@ -39,11 +36,6 @@ spec:
               configMapKeyRef:
                 name: env-configmap
                 key: AWS_BUCKET
-          - name: AWS_PROFILE
-            valueFrom:
-              configMapKeyRef:
-                name: env-configmap
-                key: AWS_PROFILE
           - name: AWS_REGION
             valueFrom:
               configMapKeyRef:
@@ -71,26 +63,24 @@ spec:
                 name: env-secret
                 key: POSTGRES_PASSWORD
                 optional: false 
-        volumeMounts:
-          - name: aws-secret
-            mountPath: '/root/.aws/'
-            readOnly: true
-      restartPolicy: Always
-      volumes:
-        - name: aws-secret
-          secret:
-            secretName: aws-secret
+        ports:
+        - containerPort: 8080
 ---
 apiVersion: v1
 kind: Service
 metadata:
+  name: backend-user
   labels:
-    service: backend-feed
-  name: backend-feed
+    run: backend-user
+  namespace: default
 spec:
   ports:
-  - name: "8080"
-    port: 8080
+  - port: 8080
+    protocol: TCP
     targetPort: 8080
   selector:
-    service: backend-feed
+    run: backend-user
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
